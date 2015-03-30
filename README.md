@@ -1,4 +1,4 @@
-# Shuttle
+# Commute
 
 A simple command-line tool for syncing development databases.
 
@@ -7,12 +7,12 @@ A simple command-line tool for syncing development databases.
 ## Install
 
 ```
-npm install -g shuttle
+npm install -g commute
 ```
 
 ## Setup
 
-Shuttle expects to find a file at `~/shuttle/projects.json` that defines the connection settings for each project.
+Commute expects to find a file at `~/commute/projects.json` that defines the connection settings for each project.
 
 ```
 [
@@ -38,10 +38,10 @@ Shuttle expects to find a file at `~/shuttle/projects.json` that defines the con
 
 ## Use
 
-Run shuttle out of any project directory:
+Run commute out of any project directory:
 
 ```
-shuttle <project> <operation>
+commute <project> <operation>
 ```
 
 `project`: The name of the project to work with, should match a record in `projects.json`

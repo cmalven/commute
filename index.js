@@ -27,11 +27,11 @@ if (!program.args.length) {
 
 // Read projects file
 try {
-  var projectsFile = fs.readFileSync(process.env['HOME'] + '/shuttle/projects.json', 'utf8');
+  var projectsFile = fs.readFileSync(process.env['HOME'] + '/commute/projects.json', 'utf8');
 }
 catch (error) {
   console.log('error', error);
-  return console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('projects.json') + " file in " + chalk.yellow('~/shuttle/') );
+  return console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('projects.json') + " file in " + chalk.yellow('~/commute/') );
 }
 
 // Try to find passed project within file

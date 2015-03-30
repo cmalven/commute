@@ -1,6 +1,6 @@
 {
-  "name": "shuttle",
-  "version": "0.0.0",
+  "name": "commute",
+  "version": "0.0.1",
   "description": "A simple command-line tool for syncing databases",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
   "author": "Chris Malven",
   "license": "ISC",
   "bin": {
-    "shuttle": "index.js"
+    "commute": "index.js"
   },
   "dependencies": {
     "chalk": "^1.0.0",

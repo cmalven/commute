@@ -62,6 +62,6 @@ Pulls the staging db down to local. _(not yet implemented)_
 
 Pulls the `.sql` file defined in `seedDbPath` of `projects.json` into your local db.
 
-### Dump
+### dump
 
 Dumps the contents of your local db into the file defined in `seedDbPath` of `projects.json`

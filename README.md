@@ -52,11 +52,11 @@ commute <project> <operation>
 
 ### up
 
-Pushes your local db up to staging.
+Pushes your local db up to staging. _(not yet implemented)_
 
 ### down
 
-Pulls the staging db down to local.
+Pulls the staging db down to local. _(not yet implemented)_
 
 ### seed
 

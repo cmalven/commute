@@ -52,16 +52,16 @@ commute <project> <operation>
 
 ### up
 
-Pushes your local db up to staging.
+Pushes your local db up to staging. _(not yet implemented)_
 
 ### down
 
-Pulls the staging db down to local.
+Pulls the staging db down to local. _(not yet implemented)_
 
 ### seed
 
 Pulls the `.sql` file defined in `seedDbPath` of `projects.json` into your local db.
 
-### Dump
+### dump
 
 Dumps the contents of your local db into the file defined in `seedDbPath` of `projects.json`

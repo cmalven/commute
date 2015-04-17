@@ -27,6 +27,7 @@ Commute expects to find a file at `~/commute/projects.json` that defines the con
       "database": "myproject"
     },
     "staging": {
+      "ssh":      true,
       "host":     "96.120.203.112",
       "user":     "admin",
       "password": "abc123",

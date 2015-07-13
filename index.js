@@ -49,12 +49,20 @@ var operations = {
   connect: function(environment) {
     var connectMethod = project[environment];
 
-    return [
-      "--host=" + connectMethod.host,
+    var host = (connectMethod.ssh) ? '127.0.0.1' : connectMethod.host;
+
+    var connectionDetails = [
+      "--host=" + host,
       "--user=" + connectMethod.user,
-      "--password=" + connectMethod.password,
-      connectMethod.database
-    ].join(' ');
+      "--password=" + connectMethod.password
+    ];
+
+    // Add a port, if set
+    if (connectMethod.port) {
+      connectionDetails.push("--port=" + connectMethod.port);
+    }
+
+    return connectionDetails.join(' ') + ' ' + connectMethod.database;
   },
 
   runOperation: function(command) {
@@ -90,7 +98,6 @@ var operations = {
   dumpFromEnvironment: function (environment) {
     console.log(chalk.cyan('Dumping contents of ' + chalk.cyan.underline(environment) + ' database.'));
     var command = operations.getMysqlConnect(environment)['mysqldump'] + '> ' + project.seedDbPath + ' ' + operations.connect(environment);
-    console.log('command', command);
     operations.runOperation(command);
   },
 

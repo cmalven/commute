@@ -101,11 +101,18 @@ var operations = {
     operations.runOperation(command);
   },
 
+  pushToEnvironment: function (environment) {
+    console.log(chalk.cyan('Pushing file at ' + project['seedDbPath'] + ' to ' + chalk.cyan.underline(environment) + ' database.'));
+    var command = operations.getMysqlConnect(environment)['mysql'] + ' ' + operations.connect(environment) + ' < ' + project.seedDbPath;
+    operations.runOperation(command);
+  },
+
 
   // Exposed to command line utility
 
   up: function() {
     operations.createSshTunnel('staging');
+    operations.pushToEnvironment('staging');
   },
 
   down: function() {

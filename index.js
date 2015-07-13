@@ -30,7 +30,6 @@ try {
   var projectsFile = fs.readFileSync(process.env['HOME'] + '/commute/projects.json', 'utf8');
 }
 catch (error) {
-  console.log('error', error);
   return console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('projects.json') + " file in " + chalk.yellow('~/commute/') );
 }
 
@@ -50,25 +49,42 @@ var operations = {
   connect: function(environment) {
     var connectMethod = project[environment];
 
-    return [
-      "--host=" + connectMethod.host,
+    var host = (connectMethod.ssh) ? '127.0.0.1' : connectMethod.host;
+
+    var connectionDetails = [
+      "--host=" + host,
       "--user=" + connectMethod.user,
-      "--password=" + connectMethod.password,
-      connectMethod.database
-    ].join(' ');
+      "--password=" + connectMethod.password
+    ];
+
+    // Add a port, if set
+    if (connectMethod.port) {
+      connectionDetails.push("--port=" + connectMethod.port);
+    }
+
+    return connectionDetails.join(' ') + ' ' + connectMethod.database;
   },
 
   runOperation: function(command) {
     var child = exec(command,
       function(error, stdout, stderr) {
         if (error) {
-          return console.log(chalk.red.underline('Error:') + " The operation failed.");
+          console.log(chalk.red.underline('Error:') + " The operation failed:");
+          console.log(chalk.red(error));
+          return;
         }
         else {
           return console.log("The " + chalk.yellow(program.args[1]) + " operation was " + chalk.cyan('successful!'));
         }
       }
     );
+  },
+
+  createSshTunnel: function (environment) {
+    if (!project[environment]['ssh']) return;
+    console.log(chalk.green('Creating a secure tunnel to database…'));
+    var command = 'ssh -f ' + project[environment]['user'] + '@' + project[environment]['host'] + ' -L 3307:' + project[environment]['host'] + ':3306 -N';
+    operations.runOperation(command);
   },
 
   getMysqlConnect: function(environment) {
@@ -79,12 +95,29 @@ var operations = {
     };
   },
 
+  dumpFromEnvironment: function (environment) {
+    console.log(chalk.cyan('Dumping contents of ' + chalk.cyan.underline(environment) + ' database.'));
+    var command = operations.getMysqlConnect(environment)['mysqldump'] + '> ' + project.seedDbPath + ' ' + operations.connect(environment);
+    operations.runOperation(command);
+  },
+
+  pushToEnvironment: function (environment) {
+    console.log(chalk.cyan('Pushing file at ' + project['seedDbPath'] + ' to ' + chalk.cyan.underline(environment) + ' database.'));
+    var command = operations.getMysqlConnect(environment)['mysql'] + ' ' + operations.connect(environment) + ' < ' + project.seedDbPath;
+    operations.runOperation(command);
+  },
+
+
+  // Exposed to command line utility
+
   up: function() {
-    console.log("The " + chalk.cyan('up') + " command hasn't been implemented yet");
+    operations.createSshTunnel('staging');
+    operations.pushToEnvironment('staging');
   },
 
   down: function() {
-    console.log("The " + chalk.cyan('down') + " command hasn't been implemented yet");
+    operations.createSshTunnel('staging');
+    operations.dumpFromEnvironment('staging');
   },
 
   seed: function() {
@@ -93,8 +126,7 @@ var operations = {
   },
 
   dump: function() {
-    var command = operations.getMysqlConnect('local')['mysqldump'] + ' > ' + project.seedDbPath + ' ' + operations.connect('local') ;
-    operations.runOperation(command);
+    operations.dumpFromEnvironment('local');
   },
 };
 

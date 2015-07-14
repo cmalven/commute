@@ -58,8 +58,8 @@ var operations = {
     ];
 
     // Add a port, if set
-    if (connectMethod.port) {
-      connectionDetails.push("--port=" + connectMethod.port);
+    if (connectMethod.ssh) {
+      connectionDetails.push("--port=3307");
     }
 
     return connectionDetails.join(' ') + ' ' + connectMethod.database;

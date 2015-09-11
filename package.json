@@ -1,6 +1,6 @@
 {
   "name": "commute",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A simple command-line tool for syncing databases",
   "main": "index.js",
   "scripts": {

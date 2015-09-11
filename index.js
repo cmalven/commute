@@ -12,7 +12,8 @@ var options = {
     'down',
     'seed',
     'dump'
-  ]
+  ],
+  sshHost: '127.0.0.1'
 };
 
 program
@@ -52,7 +53,7 @@ var operations = {
     var host = (connectMethod.ssh) ? '127.0.0.1' : connectMethod.host;
 
     var connectionDetails = [
-      "--host=" + host,
+      "--host=" + (connectMethod.ssh) ? option.sshHost : host,
       "--user=" + connectMethod.user,
       "--password=" + connectMethod.password
     ];
@@ -83,7 +84,7 @@ var operations = {
   createSshTunnel: function (environment) {
     if (!project[environment]['ssh']) return;
     console.log(chalk.green('Creating a secure tunnel to database…'));
-    var command = 'ssh -f ' + project[environment]['user'] + '@' + project[environment]['host'] + ' -L 3307:' + project[environment]['host'] + ':3306 -N';
+    var command = 'ssh -f ' + project[environment]['user'] + '@' + project[environment]['host'] + ' -L 3307:' + option.sshHost + ':3306 -N';
     operations.runOperation(command);
   },
 

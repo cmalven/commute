@@ -53,7 +53,7 @@ var operations = {
     var host = (connectMethod.ssh) ? '127.0.0.1' : connectMethod.host;
 
     var connectionDetails = [
-      "--host=" + (connectMethod.ssh) ? options.sshHost : host,
+      "--host=" + host,
       "--user=" + connectMethod.user,
       "--password=" + connectMethod.password
     ];

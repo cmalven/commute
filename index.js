@@ -25,6 +25,9 @@ if (!program.args.length) {
   return program.help();
 }
 
+// Pull out command line arguments
+const [argProject, argCommand] = program.args;
+
 // Reference to the main config file and project
 let file;
 let project;
@@ -47,13 +50,13 @@ try {
 
 // Try to find passed project within file
 try {
-  project = Object.entries(file).find(entry => entry[0] === program.args[0])[1];
+  project = Object.entries(file).find(entry => entry[0] === argProject)[1];
 } catch (error) {
-  return console.log(chalk.red.underline('Error:') + " Couldn't find a project in .commute.yml " + chalk.cyan('projects.json') + ' called ' + chalk.yellow(program.args[0]));
+  return console.log(chalk.red.underline('Error:') + " Couldn't find a project in .commute.yml " + chalk.cyan('projects.json') + ' called ' + chalk.yellow(argProject));
 }
 
 // Stop if the second argument isn't valid
-if (options.operations.includes(program.args[1] < 0)) {
+if (options.operations.includes(argCommand < 0)) {
   let availableOptions = options.operations.join(', ');
   return console.log(chalk.red.underline('Error:') + ' The operation must be one of ' + chalk.cyan(availableOptions));
 }
@@ -158,5 +161,5 @@ let operations = {
 };
 
 // Proceed based on passed direction
-console.log('Running ' + chalk.cyan(program.args[1]));
-operations[program.args[1]]();
+console.log('Running ' + chalk.cyan(argCommand));
+operations[argCommand]();

@@ -9,10 +9,8 @@ const yaml = require('js-yaml');
 let options = {
   operations: [
     'down',
-    'seed',
     'dump',
   ],
-  sshHost: '127.0.0.1',
 };
 
 program

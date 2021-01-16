@@ -1,6 +1,6 @@
 # Commute
 
-A simple command-line tool for syncing development databases.
+A simple command-line tool for syncing development database.
 
 ---
 
@@ -8,33 +8,30 @@ A simple command-line tool for syncing development databases.
 
 ```
 npm install -g commute
+
+OR
+
+npm link -g (from within this repo locally)
 ```
 
 ## Setup
 
-Commute expects to find a file at `~/commute/projects.json` that defines the connection settings for each project.
+Commute expects to find a YAML file at `~/.commute.yml` that defines the connection settings for each project.
 
-```
-[
-  {
-    "name": "myProject",
-    "seedDbPath": "seed/db.sql",
-    "local": {
-      "useMamp":  true,
-      "host":     "localhost",
-      "user":     "root",
-      "password": "root",
-      "database": "myproject"
-    },
-    "staging": {
-      "ssh":      true,
-      "host":     "96.120.203.112",
-      "user":     "admin",
-      "password": "abc123",
-      "database": "myproject"
-    }
-  }
-]
+```yaml
+my-project:
+  remote:
+    host: 123.456.789.1234
+    secure: true
+    u: myuser
+    db:
+      name: remote-db-name
+      u: dbuser
+      p: dbpass
+
+  local:
+    db:
+      name: local-db-name
 ```
 
 ## Use
@@ -45,24 +42,16 @@ Run commute out of any project directory:
 commute <project> <operation>
 ```
 
-`project`: The name of the project to work with, should match a record in `projects.json`
+`project`: The name of the project to work with, should match a top-level key in `~/.commute.yml`
 
-`operation`: Should be one of `up`, `down`, `seed`, or `dump`
+`operation`: Should be one of `down`, or `dump`
 
 ## Operations
 
-### up
-
-Pushes your the file at `seedDbPath` up to staging.
-
 ### down
 
-Pulls the staging db down to a file at `seedDbPath`.
-
-### seed
-
-Pulls the file at `seedDbPath` into your local db.
+Creates a dump of the remote database and imports it into the local database.
 
 ### dump
 
-Dumps the contents of your local db into the file at `seedDbPath`
+Creates a dump of the remote database and saves it locally without importing.

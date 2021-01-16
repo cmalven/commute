@@ -1,19 +1,18 @@
 #!/usr/bin/env node
 
-var program = require('commander');
-var fs      = require('fs');
-var _       = require('lodash');
-var chalk   = require('chalk');
-var exec    = require('child_process').exec;
+const program = require('commander');
+const fs = require('fs');
+const chalk = require('chalk');
+const execSync = require('child_process').execSync;
+const yaml = require('js-yaml');
 
-var options = {
+let options = {
   operations: [
-    'up',
     'down',
     'seed',
-    'dump'
+    'dump',
   ],
-  sshHost: '127.0.0.1'
+  sshHost: '127.0.0.1',
 };
 
 program
@@ -26,108 +25,135 @@ if (!program.args.length) {
   return program.help();
 }
 
+// Reference to the main config file and project
+let file;
+let project;
+
+// Store the current time
+const currentdate = new Date();
+const time = currentdate.getFullYear() + '-'
+  + (currentdate.getMonth()+1) + '-'
+  + currentdate.getDate() + '-'
+  + currentdate.getHours() + '-'
+  + currentdate.getMinutes() + '-'
+  + currentdate.getSeconds();
+
 // Read projects file
 try {
-  var projectsFile = fs.readFileSync(process.env['HOME'] + '/commute/projects.json', 'utf8');
-}
-catch (error) {
-  return console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('projects.json') + " file in " + chalk.yellow('~/commute/') );
+  file = yaml.load(fs.readFileSync(process.env['HOME'] + '/.commute.yml', 'utf8'));
+} catch (error) {
+  return console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('.commute.yml') + ' file in ' + chalk.yellow(process.env['HOME']));
 }
 
 // Try to find passed project within file
-var project = _.findWhere(JSON.parse(projectsFile), { name: program.args[0] });
-if (!project) {
-  return console.log(chalk.red.underline('Error:') + " Couldn't find a project in " + chalk.cyan('projects.json') + " called " + chalk.yellow(program.args[0]) );
+try {
+  project = Object.entries(file).find(entry => entry[0] === program.args[0])[1];
+} catch (error) {
+  return console.log(chalk.red.underline('Error:') + " Couldn't find a project in .commute.yml " + chalk.cyan('projects.json') + ' called ' + chalk.yellow(program.args[0]));
 }
 
 // Stop if the second argument isn't valid
-if (!_.contains(options.operations, program.args[1])) {
-  var availableOptions = options.operations.join(', ');
-  return  console.log(chalk.red.underline('Error:') + " The operation must be one of " + chalk.cyan(availableOptions) );
+if (options.operations.includes(program.args[1] < 0)) {
+  let availableOptions = options.operations.join(', ');
+  return console.log(chalk.red.underline('Error:') + ' The operation must be one of ' + chalk.cyan(availableOptions));
 }
 
-var operations = {
-  connect: function(environment) {
-    var connectMethod = project[environment];
+let operations = {
+  getSqlConnect: function(environment, mysqlArgs = []) {
+    let connectMethod = project[environment];
 
-    var host = (connectMethod.ssh) ? '127.0.0.1' : connectMethod.host;
+    let host = connectMethod.secure ? '127.0.0.1' : connectMethod.host || '127.0.0.1';
+    let user = connectMethod.db.u || 'root';
+    let pass = connectMethod.db.p || null;
 
-    var connectionDetails = [
-      "--host=" + host,
-      "--user=" + connectMethod.user,
-      "--password=" + connectMethod.password
+    let connectionDetails = [
+      '--host=' + host,
+      '--user=' + user,
     ];
 
-    // Add a port, if set
-    if (connectMethod.ssh) {
-      connectionDetails.push("--port=3307");
+    // Apply password
+    if (pass) {
+      connectionDetails.push('--password=' + pass);
     }
 
-    return connectionDetails.join(' ') + ' ' + connectMethod.database;
+    // Add a port, if set
+    if (connectMethod.secure) {
+      connectionDetails.push('--port=3306');
+    }
+
+    return connectionDetails.concat(mysqlArgs).join(' ') + ' ' + connectMethod.db.name;
   },
 
-  runOperation: function(command) {
-    var child = exec(command,
-      function(error, stdout, stderr) {
+  runOperation: function(command, commandName) {
+    execSync(command,
+      function(error) {
         if (error) {
-          console.log(chalk.red.underline('Error:') + " The operation failed:");
+          console.log(chalk.red.underline('Error:') + ' The operation failed:');
           console.log(chalk.red(error));
-          return;
-        }
-        else {
-          return console.log("The " + chalk.yellow(program.args[1]) + " operation was " + chalk.cyan('successful!'));
+
+        } else {
+          return console.log('The ' + chalk.yellow(commandName) + ' operation was ' + chalk.cyan('successful!'));
         }
       }
     );
   },
 
-  createSshTunnel: function (environment) {
-    if (!project[environment]['ssh']) return;
-    console.log(chalk.green('Creating a secure tunnel to database…'));
-    var command = 'ssh -f ' + project[environment]['user'] + '@' + project[environment]['host'] + ' -L 3307:' + options.sshHost + ':3306 -N';
-    operations.runOperation(command);
+
+  getSsh: function(environment) {
+    let connectMethod = project[environment];
+    return `ssh ${connectMethod.u}@${connectMethod.host}`;
   },
 
-  getMysqlConnect: function(environment) {
-    var connectMethod = project[environment];
-    return {
-      mysql: (connectMethod.useMamp) ? '/Applications/MAMP/Library/bin/mysql ' : 'mysql ',
-      mysqldump: (connectMethod.useMamp) ? '/Applications/MAMP/Library/bin/mysqldump ' : 'mysqldump ',
-    };
+  getSqlCommand: function(command, environment) {
+    let connectMethod = project[environment];
+    if (connectMethod.secure) {
+      return `${operations.getSsh(environment)} "${command}"`;
+    } else {
+      return command;
+    }
   },
 
-  dumpFromEnvironment: function (environment) {
+  dumpFromEnvironment: function(environment) {
     console.log(chalk.cyan('Dumping contents of ' + chalk.cyan.underline(environment) + ' database.'));
-    var command = operations.getMysqlConnect(environment)['mysqldump'] + '> ' + project.seedDbPath + ' ' + operations.connect(environment);
-    operations.runOperation(command);
+    let command = operations.getSqlCommand(
+      `mysqldump ${operations.getSqlConnect(environment, ['--no-tablespaces'])} | gzip -9`,
+      environment,
+    );
+    command += ` > ~/Downloads/${this.getDbFilename(environment)}.sql.gz`;
+    operations.runOperation(command, 'dump');
   },
 
-  pushToEnvironment: function (environment) {
-    console.log(chalk.cyan('Pushing file at ' + project['seedDbPath'] + ' to ' + chalk.cyan.underline(environment) + ' database.'));
-    var command = operations.getMysqlConnect(environment)['mysql'] + ' ' + operations.connect(environment) + ' < ' + project.seedDbPath;
-    operations.runOperation(command);
+  getDbFilename: function(environment) {
+    let connectMethod = project[environment];
+    return `${connectMethod.db.name}-${time}`;
   },
-
 
   // Exposed to command line utility
 
-  up: function() {
-    operations.createSshTunnel('staging');
-    operations.pushToEnvironment('staging');
+  down: function() {
+    operations.dumpFromEnvironment('remote');
+    operations.expandArchive();
+    operations.seed();
   },
 
-  down: function() {
-    operations.createSshTunnel('staging');
-    operations.dumpFromEnvironment('staging');
+  expandArchive: function() {
+    console.log(chalk.cyan('Expanding dumped database archive.'));
+    const command = `gunzip ~/Downloads/${this.getDbFilename('remote')}.sql.gz`;
+    operations.runOperation(command, 'expand');
   },
 
   seed: function() {
-    var command = operations.getMysqlConnect('local')['mysql'] + operations.connect('local') + ' < ' + project.seedDbPath;
-    operations.runOperation(command);
+    console.log(chalk.cyan('Seeding contents of ' + chalk.cyan.underline('local') + ' database.'));
+    let command = operations.getSqlCommand(
+      `mysql ${operations.getSqlConnect('local')}`,
+      'local',
+    );
+    command += ` < ~/Downloads/${this.getDbFilename('remote')}.sql`;
+    operations.runOperation(command, 'seed');
   },
 
   dump: function() {
-    operations.dumpFromEnvironment('local');
+    operations.dumpFromEnvironment('remote');
   },
 };
 

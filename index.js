@@ -129,14 +129,6 @@ let operations = {
     return `${connectMethod.db.name}-${time}`;
   },
 
-  // Exposed to command line utility
-
-  down: function() {
-    operations.dumpFromEnvironment('remote');
-    operations.expandArchive();
-    operations.seed();
-  },
-
   expandArchive: function() {
     console.log(chalk.cyan('Expanding dumped database archive.'));
     const command = `gunzip ~/Downloads/${this.getDbFilename('remote')}.sql.gz`;
@@ -151,6 +143,14 @@ let operations = {
     );
     command += ` < ~/Downloads/${this.getDbFilename('remote')}.sql`;
     operations.runOperation(command, 'seed');
+  },
+
+  // Exposed to command line utility
+
+  down: function() {
+    operations.dumpFromEnvironment('remote');
+    operations.expandArchive();
+    operations.seed();
   },
 
   dump: function() {

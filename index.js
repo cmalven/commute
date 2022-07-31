@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
-const program = require('commander');
-const fs = require('fs');
-const chalk = require('chalk');
-const execSync = require('child_process').execSync;
-const yaml = require('js-yaml');
+import { program } from 'commander';
+import fs from 'fs';
+import chalk from 'chalk';
+import yaml from 'js-yaml';
+import { execSync } from 'child_process';
+import merge from 'deepmerge';
 
-let options = {
+const options = {
   operations: [
     'down',
     'dump',
@@ -20,7 +21,8 @@ program
 
 // Show "Help" if no arguments
 if (!program.args.length) {
-  return program.help();
+  program.help();
+  process.exit();
 }
 
 // Pull out command line arguments
@@ -43,31 +45,34 @@ const time = currentdate.getFullYear() + '-'
 try {
   file = yaml.load(fs.readFileSync(process.env['HOME'] + '/.commute.yml', 'utf8'));
 } catch (error) {
-  return console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('.commute.yml') + ' file in ' + chalk.yellow(process.env['HOME']));
+  console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('.commute.yml') + ' file in ' + chalk.yellow(process.env['HOME']));
+  process.exit();
 }
 
 // Try to find passed project within file
 try {
   project = Object.entries(file).find(entry => entry[0] === argProject)[1];
 } catch (error) {
-  return console.log(chalk.red.underline('Error:') + " Couldn't find a project in .commute.yml " + chalk.cyan('projects.json') + ' called ' + chalk.yellow(argProject));
+  console.log(chalk.red.underline('Error:') + " Couldn't find a project in .commute.yml " + chalk.cyan('projects.json') + ' called ' + chalk.yellow(argProject));
+  process.exit();
 }
 
 // Stop if the second argument isn't valid
 if (options.operations.includes(argCommand < 0)) {
-  let availableOptions = options.operations.join(', ');
-  return console.log(chalk.red.underline('Error:') + ' The operation must be one of ' + chalk.cyan(availableOptions));
+  const availableOptions = options.operations.join(', ');
+  console.log(chalk.red.underline('Error:') + ' The operation must be one of ' + chalk.cyan(availableOptions));
+  process.exit();
 }
 
-let operations = {
+const operations = {
   getSqlConnect: function(environment, mysqlArgs = []) {
-    let connectMethod = project[environment];
+    const connectMethod = this.getConnectMethod(project, environment);
 
-    let host = connectMethod.secure ? '127.0.0.1' : connectMethod.host || '127.0.0.1';
-    let user = connectMethod.db.u || 'root';
-    let pass = connectMethod.db.p || null;
+    const host = connectMethod.secure ? '127.0.0.1' : connectMethod.host || '127.0.0.1';
+    const user = connectMethod.db.u || 'root';
+    const pass = connectMethod.db.p || null;
 
-    let connectionDetails = [
+    const connectionDetails = [
       '--host=' + host,
       '--user=' + user,
     ];
@@ -95,18 +100,48 @@ let operations = {
         } else {
           return console.log('The ' + chalk.yellow(commandName) + ' operation was ' + chalk.cyan('successful!'));
         }
-      }
+      },
     );
   },
 
+  getConnectMethod: function(project, environment) {
+    const connectMethod = project[environment];
+    let source = {};
+
+    // Bail out if we can't find the desired environment
+    if (!connectMethod) {
+      console.log(chalk.red(`We couldn't find the environment ${environment} for the project ${project}`));
+      process.exit();
+    }
+
+    // If the environment has a `source`, we want it
+    if (connectMethod.source) {
+      // No sources found
+      if (!file.sources) {
+        console.log(chalk.red(`The environment ${environment} for the project ${project} references a source, but there are no "sources" defined in .commute.yml`));
+        process.exit();
+      }
+
+      // Try to find the source
+      source = file.sources[connectMethod.source];
+
+      // The referenced source is missing
+      if (!file.sources) {
+        console.log(chalk.red(`The environment ${environment} for the project ${project} references a source ${connectMethod.source} that doesn't exist in your "sources" in .commute.yml`));
+        process.exit();
+      }
+    }
+
+    return merge(source, connectMethod);
+  },
 
   getSsh: function(environment) {
-    let connectMethod = project[environment];
+    const connectMethod = this.getConnectMethod(project, environment);
     return `ssh ${connectMethod.u}@${connectMethod.host}`;
   },
 
   getSqlCommand: function(command, environment) {
-    let connectMethod = project[environment];
+    const connectMethod = this.getConnectMethod(project, environment);
     if (connectMethod.secure) {
       return `${operations.getSsh(environment)} "${command}"`;
     } else {
@@ -125,7 +160,7 @@ let operations = {
   },
 
   getDbFilename: function(environment) {
-    let connectMethod = project[environment];
+    const connectMethod = this.getConnectMethod(project, environment);
     return `${connectMethod.db.name}-${time}`;
   },
 

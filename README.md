@@ -19,17 +19,27 @@ npm link -g (from within this repo locally)
 Commute expects to find a YAML file at `~/.commute.yml` that defines the connection settings for each project.
 
 ```yaml
+sources:
+  staging:
+    host: 123.456.789.0
+    u: remoteuser
+    secure: true
+  mysql-local:
+    host: 127.0.0.1
+    db:
+      u: root
+      p: root
+        
 my-project:
   remote:
-    host: 123.456.789.1234
-    secure: true
-    u: myuser
+    source: staging
     db:
       name: remote-db-name
       u: dbuser
       p: dbpass
 
   local:
+    source: mysql-local
     db:
       name: local-db-name
 ```

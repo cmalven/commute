@@ -5,6 +5,7 @@ import fs from 'fs';
 import chalk from 'chalk';
 import yaml from 'js-yaml';
 import { execSync } from 'child_process';
+import merge from 'deepmerge';
 
 const options = {
   operations: [
@@ -65,7 +66,7 @@ if (options.operations.includes(argCommand < 0)) {
 
 const operations = {
   getSqlConnect: function(environment, mysqlArgs = []) {
-    const connectMethod = project[environment];
+    const connectMethod = this.getConnectMethod(project, environment);
 
     const host = connectMethod.secure ? '127.0.0.1' : connectMethod.host || '127.0.0.1';
     const user = connectMethod.db.u || 'root';
@@ -103,14 +104,44 @@ const operations = {
     );
   },
 
+  getConnectMethod: function(project, environment) {
+    const connectMethod = project[environment];
+    let source = {};
+
+    // Bail out if we can't find the desired environment
+    if (!connectMethod) {
+      console.log(chalk.red(`We couldn't find the environment ${environment} for the project ${project}`));
+      process.exit();
+    }
+
+    // If the environment has a `source`, we want it
+    if (connectMethod.source) {
+      // No sources found
+      if (!file.sources) {
+        console.log(chalk.red(`The environment ${environment} for the project ${project} references a source, but there are no "sources" defined in .commute.yml`));
+        process.exit();
+      }
+
+      // Try to find the source
+      source = file.sources[connectMethod.source];
+
+      // The referenced source is missing
+      if (!file.sources) {
+        console.log(chalk.red(`The environment ${environment} for the project ${project} references a source ${connectMethod.source} that doesn't exist in your "sources" in .commute.yml`));
+        process.exit();
+      }
+    }
+
+    return merge(source, connectMethod);
+  },
 
   getSsh: function(environment) {
-    const connectMethod = project[environment];
+    const connectMethod = this.getConnectMethod(project, environment);
     return `ssh ${connectMethod.u}@${connectMethod.host}`;
   },
 
   getSqlCommand: function(command, environment) {
-    const connectMethod = project[environment];
+    const connectMethod = this.getConnectMethod(project, environment);
     if (connectMethod.secure) {
       return `${operations.getSsh(environment)} "${command}"`;
     } else {
@@ -129,7 +160,7 @@ const operations = {
   },
 
   getDbFilename: function(environment) {
-    const connectMethod = project[environment];
+    const connectMethod = this.getConnectMethod(project, environment);
     return `${connectMethod.db.name}-${time}`;
   },
 

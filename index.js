@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-const program = require('commander');
-const fs = require('fs');
-const chalk = require('chalk');
-const execSync = require('child_process').execSync;
-const yaml = require('js-yaml');
+import { program } from 'commander';
+import fs from 'fs';
+import chalk from 'chalk';
+import yaml from 'js-yaml';
+import { execSync } from 'child_process';
 
-let options = {
+const options = {
   operations: [
     'down',
     'dump',
@@ -20,7 +20,8 @@ program
 
 // Show "Help" if no arguments
 if (!program.args.length) {
-  return program.help();
+  program.help();
+  process.exit();
 }
 
 // Pull out command line arguments
@@ -43,31 +44,34 @@ const time = currentdate.getFullYear() + '-'
 try {
   file = yaml.load(fs.readFileSync(process.env['HOME'] + '/.commute.yml', 'utf8'));
 } catch (error) {
-  return console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('.commute.yml') + ' file in ' + chalk.yellow(process.env['HOME']));
+  console.log(chalk.red.underline('Error:') + " Couldn't find a " + chalk.cyan('.commute.yml') + ' file in ' + chalk.yellow(process.env['HOME']));
+  process.exit();
 }
 
 // Try to find passed project within file
 try {
   project = Object.entries(file).find(entry => entry[0] === argProject)[1];
 } catch (error) {
-  return console.log(chalk.red.underline('Error:') + " Couldn't find a project in .commute.yml " + chalk.cyan('projects.json') + ' called ' + chalk.yellow(argProject));
+  console.log(chalk.red.underline('Error:') + " Couldn't find a project in .commute.yml " + chalk.cyan('projects.json') + ' called ' + chalk.yellow(argProject));
+  process.exit();
 }
 
 // Stop if the second argument isn't valid
 if (options.operations.includes(argCommand < 0)) {
-  let availableOptions = options.operations.join(', ');
-  return console.log(chalk.red.underline('Error:') + ' The operation must be one of ' + chalk.cyan(availableOptions));
+  const availableOptions = options.operations.join(', ');
+  console.log(chalk.red.underline('Error:') + ' The operation must be one of ' + chalk.cyan(availableOptions));
+  process.exit();
 }
 
-let operations = {
+const operations = {
   getSqlConnect: function(environment, mysqlArgs = []) {
-    let connectMethod = project[environment];
+    const connectMethod = project[environment];
 
-    let host = connectMethod.secure ? '127.0.0.1' : connectMethod.host || '127.0.0.1';
-    let user = connectMethod.db.u || 'root';
-    let pass = connectMethod.db.p || null;
+    const host = connectMethod.secure ? '127.0.0.1' : connectMethod.host || '127.0.0.1';
+    const user = connectMethod.db.u || 'root';
+    const pass = connectMethod.db.p || null;
 
-    let connectionDetails = [
+    const connectionDetails = [
       '--host=' + host,
       '--user=' + user,
     ];
@@ -95,18 +99,18 @@ let operations = {
         } else {
           return console.log('The ' + chalk.yellow(commandName) + ' operation was ' + chalk.cyan('successful!'));
         }
-      }
+      },
     );
   },
 
 
   getSsh: function(environment) {
-    let connectMethod = project[environment];
+    const connectMethod = project[environment];
     return `ssh ${connectMethod.u}@${connectMethod.host}`;
   },
 
   getSqlCommand: function(command, environment) {
-    let connectMethod = project[environment];
+    const connectMethod = project[environment];
     if (connectMethod.secure) {
       return `${operations.getSsh(environment)} "${command}"`;
     } else {
@@ -125,7 +129,7 @@ let operations = {
   },
 
   getDbFilename: function(environment) {
-    let connectMethod = project[environment];
+    const connectMethod = project[environment];
     return `${connectMethod.db.name}-${time}`;
   },
 

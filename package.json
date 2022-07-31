@@ -1,8 +1,9 @@
 {
   "name": "commute",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A simple command-line tool for syncing databases",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"No test specified\" && exit 0"
   },
@@ -12,14 +13,12 @@
     "commute": "index.js"
   },
   "dependencies": {
-    "chalk": "^4.1.0",
-    "commander": "^7.0.0",
-    "js-yaml": "^4.0.0"
+    "chalk": "^5.0.1",
+    "commander": "^9.4.0",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "@malven/eslint-config": "^1.0.1",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^7.18.0",
-    "eslint-plugin-react": "^7.22.0"
+    "@malven/eslint-config": "^2.0.0",
+    "eslint": "^8.20.0"
   }
 }

@@ -142,10 +142,12 @@ const operations = {
 
   getSqlCommand: function(command, environment) {
     const connectMethod = this.getConnectMethod(project, environment);
+    let prefix = connectMethod.prefixCommand ?? '';
+    if (prefix.length) prefix += ' ';
     if (connectMethod.secure) {
-      return `${operations.getSsh(environment)} "${command}"`;
+      return `${prefix} ${operations.getSsh(environment)} "${command}"`;
     } else {
-      return command;
+      return `${prefix} ${command}`;
     }
   },
 

@@ -29,6 +29,12 @@ sources:
     db:
       u: root
       p: root
+  ddev-local:
+    prefixCommand: ddev exec
+    db:
+      u: db
+      p: db
+      name: db
         
 my-project:
   remote:
